@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A-ware Tupperware – Hacé tu pedido</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #1a6fc4;
+      --blue-dark: #14569a;
+      --blue-light: #e8f1fb;
+      --teal: #00a99d;
+      --gray: #f5f7fa;
+      --gray-border: #dde3ec;
+      --text: #1c2a3a;
+      --text-muted: #6b7a8d;
+      --radius: 12px;
+      --shadow: 0 2px 16px rgba(26,111,196,0.10);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: var(--text);
+      background: #fff;
+      line-height: 1.6;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--blue);
+      color: #fff;
+      padding: 0 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .logo {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: #7fd4ff; }
+    header nav a {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      margin-left: 1.5rem;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    header nav a:hover { color: #fff; }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, var(--blue) 0%, var(--teal) 100%);
+      color: #fff;
+      text-align: center;
+      padding: 4rem 1.5rem 3rem;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 800;
+      margin-bottom: 0.75rem;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      max-width: 500px;
+      margin: 0 auto 1.8rem;
+    }
+    .hero-btn {
+      background: #fff;
+      color: var(--blue);
+      font-weight: 700;
+      padding: 0.85rem 2rem;
+      border-radius: 50px;
+      text-decoration: none;
+      font-size: 1rem;
+      display: inline-block;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    }
+    .hero-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+
+    /* ── SECTIONS ── */
+    section { padding: 3.5rem 1.5rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    .section-sub {
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+
+    /* ── CATALOG ── */
+    #catalogo { background: var(--gray); }
+    .cat-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .cat-tab {
+      background: #fff;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 50px;
+      padding: 0.45rem 1rem;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    .cat-tab:hover, .cat-tab.active {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+    .cat-panel { display: none; }
+    .cat-panel.active { display: block; }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+    .product-card {
+      background: #fff;
+      border: 1.5px solid var(--gray-border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      font-size: 0.88rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      cursor: default;
+    }
+    .product-card:hover {
+      border-color: var(--blue);
+      box-shadow: var(--shadow);
+    }
+    .product-card .prod-name { font-weight: 600; color: var(--text); }
+    .product-card .prod-vol { color: var(--text-muted); font-size: 0.82rem; margin-top: 2px; }
+
+    /* ── ORDER FORM ── */
+    #pedido { background: #fff; }
+    .form-card {
+      background: #fff;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      max-width: 680px;
+      margin: 0 auto;
+      box-shadow: var(--shadow);
+    }
+    .form-row { margin-bottom: 1.25rem; }
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.4rem;
+      color: var(--text);
+    }
+    label .req { color: var(--blue); }
+    input, textarea, select {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--text);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #fafbfd;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(26,111,196,0.12);
+      background: #fff;
+    }
+    textarea { resize: vertical; min-height: 100px; }
+    .hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+
+    .pago-options {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .pago-option {
+      flex: 1;
+      min-width: 130px;
+    }
+    .pago-option input[type="radio"] { display: none; }
+    .pago-option label {
+      display: block;
+      text-align: center;
+      padding: 0.7rem 0.5rem;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+      background: #fafbfd;
+    }
+    .pago-option input[type="radio"]:checked + label {
+      border-color: var(--blue);
+      background: var(--blue-light);
+      color: var(--blue);
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 1rem;
+      background: var(--blue);
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .btn-submit:hover { background: var(--blue-dark); transform: translateY(-1px); }
+    .btn-submit:disabled { background: #a0b4cb; cursor: not-allowed; transform: none; }
+
+    /* ── SUCCESS / ERROR ── */
+    #form-result { display: none; margin-top: 1.25rem; }
+    .alert {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .alert-success { background: #e6f9f0; color: #1a7a47; border: 1.5px solid #a3dfc0; }
+    .alert-error { background: #fef0f0; color: #c0392b; border: 1.5px solid #f5b7b1; }
+
+    /* ── WHATSAPP BANNER ── */
+    .wa-banner {
+      background: var(--blue-light);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      max-width: 680px;
+      margin: 2rem auto 0;
+    }
+    .wa-icon { font-size: 2.2rem; flex-shrink: 0; }
+    .wa-text p { font-size: 0.9rem; color: var(--text-muted); }
+    .wa-text strong { color: var(--text); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--text);
+      color: rgba(255,255,255,0.7);
+      text-align: center;
+      padding: 2rem 1.5rem;
+      font-size: 0.88rem;
+    }
+    footer strong { color: #fff; }
+
+    @media (max-width: 600px) {
+      .form-card { padding: 1.5rem 1rem; }
+      header nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="logo">A-ware <span>Tupperware</span></div>
+    <nav>
+      <a href="#catalogo">Catálogo</a>
+      <a href="#pedido">Hacer pedido</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Tupperware de calidad,<br>directo a tu puerta</h1>
+  <p>Distribuidora oficial A-ware. Elegí tus productos y hacé tu pedido en minutos.</p>
+  <a href="#pedido" class="hero-btn">Hacer un pedido →</a>
+</div>
+
+<!-- CATALOGO -->
+<section id="catalogo">
+  <div class="container">
+    <div class="section-title">Catálogo de productos</div>
+    <p class="section-sub">Hacé clic en una categoría para ver los productos disponibles</p>
+
+    <div class="cat-tabs">
+      <button class="cat-tab active" onclick="showCat('botellas', this)">💧 Botellas y Termos</button>
+      <button class="cat-tab" onclick="showCat('conservacion', this)">❄️ Conservación</button>
+      <button class="cat-tab" onclick="showCat('alacena', this)">🥫 Alacena</button>
+      <button class="cat-tab" onclick="showCat('cocina', this)">🍳 Cocina</button>
+      <button class="cat-tab" onclick="showCat('servir', this)">🥘 Para Servir</button>
+      <button class="cat-tab" onclick="showCat('infantil', this)">🎒 Infantil</button>
+      <button class="cat-tab" onclick="showCat('belleza', this)">✨ Belleza y Hogar</button>
+    </div>
+
+    <div id="panel-botellas" class="cat-panel active">
+      <div class="products-grid">
+        <div class="product-card"><div class="prod-name">Eco Twist con Pico</div><div class="prod-vol">310 ml</div></div>
+        <div class="product-card"><div class="prod-name">Eco Twist con Pico</div><div class="prod-vol">1 L</div></div>
+        <div class="product-card"><div class="prod-name">Eco Twist Frutos del Bosque</div><div class="prod-vol">500 ml</div></div>
+        <div class="product-card"><div class="prod-name">Eco Twist Clásica</div><div class="prod-vol">500 ml</div></div>
+        <div class="product-card"><div class="prod-name">Aquananda Botella</div><div class="prod-vol">550 ml</div></div>
+        <div class="product-card"><div class="prod-name">Botella Térmica A-ware</div><div class="prod-vol">880 ml</div></div>
+        <div class="product-card"><div class="prod-name">Termo con 2 vasos</div><div class="prod-vol">1,2 L</div></div>
+        <div class="product-card"><div class="prod-name">Termo para Alimentos</div><div class="prod-vol">250 ml</div></div>
+        <div class="product-card"><div class="prod-name">Termo para Alimentos Bordó</div><div class="prod-vol">500 ml</div></div>
+        <div class="product-card"><div class="prod-name">Vaso Térmico con Asa</div><div class="prod-vol">1,2 L</div></div>
+        <div class="product-card"><div class="prod-name">Mate Térmico con Tapa</div><div class="prod-vol">240 ml</div></div>
+        <div class="product-card"><div class="prod-name">Vaso Party Violeta</div><div class="prod-vol">500 ml</div></div>
+      </div>
+    </div>
+
+    <div id="panel-conservacion" class="cat-panel">
+      <div class="products-grid">
+        <div class="product-card"><div class="prod-name">Portavianda</div><div class="prod-vol">850 ml</div></div>
+        <div class="product-card"><div class="prod-name">Mini Practifreezee</div><div class="prod-vol">250 ml</div></div>
+        <div class="product-card"><div class="prod-name">Practifreezee</div><div class="prod-vol">800 ml</div></div>
+        <div class="product-card"><div class="prod-name">Basic Line Transparente</div><div class="prod-vol">160 ml / 1,2 L / 2,5 L</div></div>
+        <div class="product-card"><div class="prod-name">Basic Line Verde</div><div class="prod-vol">1,2 L</div></div>
+        <div class="product-card"><div class="prod-name">Refri Fresh</div><div class="prod-vol">1 L Transparente / Verde</div></div>
+        <div class="product-card"><div class="prod-name">Guarda Ajos</div><div class="prod-vol">—</div></div>
+        <div class="product-card"><div class="prod-name">Hermético Poeme</div><div class="prod-vol">140 ml / 1,7 L / 2,4 L</div></div>
+        <div class="product-card"><div class="prod-name">Set Herméticos de Vidrio Borosilicato</div><div class="prod-vol">x4</div></div>
+        <div class="product-card"><div class="prod-name">Contenedor al Vacío Gris</div><div class="prod-vol">380 ml / 1,1 L / 1,8 L</div></div>
+        <div class="product-card"><div class="prod-name">Bolsa de Silicona Ultimate</div><div class="prod-vol">2,9 L</div></div>
+      </div>
+    </div>
+
+    <div id="panel-alacena" class="cat-panel">
+      <div class="products-grid">
+        <div class="product-card"><div class="prod-name">Toque Mágico Glamour</div><div class="prod-vol">1,25 L</div></div>
+        <div class="product-card"><div class="prod-name">Toque Mágico Higos</div><div class="prod-vol">575 ml / 1,3 L / 2,25 L</div></div>
+        <div class="product-card"><div class="prod-name">Modular Oval con Sello Dosificador</div><div class="prod-vol">2,3 L</div></div>
+        <div class="product-card"><div class="prod-name">Guarda Pan Inteligente</div><div class="prod-vol">—</div></div>
+        <div class="product-card"><div class="prod-name">Contenedor Adaptable de Silicona</div><div class="prod-vol">Mediano / Grande</div></div>
+        <div class="product-card"><div class="prod-name">Frasco de Vidrio con Cuchara Bambú</div><div class="prod-vol">550 ml / 750 ml</div></div>
+        <div class="product-card"><div class="prod-name">Contenedor con Cuchara Gris</div><div class="prod-vol">300 ml</div></div>
+      </div>
+    </div>
+
+    <div id="panel-cocina" class="cat-panel">
+      <div class="products-grid">
+        <div class="product-card"><div class="prod-name">Multi Deli Rojo</div><div class="prod-vol">2,5 L</div></div>
+        <div class="product-card"><div class="prod-name">Batetodo Rosa</div><div class="prod-vol">500 ml</div></div>
+        <div class="product-card"><div class="prod-name">Especiero Verde Menta</div><div class="prod-vol">140 ml</div></div>
+        <div class="product-card"><div class="prod-name">Prensa y Porta Hamburguesas Rojo</div><div class="prod-vol">—</div></div>
+        <div class="product-card"><div class="prod-name">Mini Colador</div><div class="prod-vol">—</div></div>
+        <div class="product-card"><div class="prod-name">Colador Verde Inglés</div><div class="prod-vol">2 L</div></div>
+        <div class="product-card"><div class="prod-name">Bowl Creativa</div><div class="prod-vol">10 L – Verde / Blanco</div></div>
+        <div class="product-card"><div class="prod-name">Batidor Ideal</div><div class="prod-vol">3,2 L – Transparente / Violeta</div></div>
+        <div class="product-card"><div class="prod-name">Set Utensilios Acero y Silicona</div><div class="prod-vol">x6</div></div>
+        <div class="product-card"><div class="prod-name">Mandolina Multifunción</div><div class="prod-vol">—</div></div>
+        <div class="product-card"><div class="prod-name">Ralladores Celeste</div><div class="prod-vol">Set x3</div></div>
+        <div class="product-card"><div class="prod-name">Centriescurridor de Verduras</div><div class="prod-vol">6 L</div></div>
+        <div class="product-card"><div class="prod-name">Molinillo Compacto de Cerámica</div><div class="prod-vol">170 ml</div></div>
+        <div class="product-card"><div class="prod-name">Organizador de Huevos</div><div class="prod-vol">x12</div></div>
+        <div class="product-card"><div class="prod-name">Posa Ollas Magnético Amarillo</div><div class="prod-vol">Set x3</div></div>
+        <div class="product-card"><div class="prod-name">Soporte Multiuso Verde</div><div class="prod-vol">Set x2</div></div>
+      </div>
+    </div>
+
+    <div id="panel-servir" class="cat-panel">
+      <div class="products-grid">
+        <div class="product-card"><div class="prod-name">Star Bowl</div><div class="prod-vol">750 ml</div></div>
+        <div class="product-card"><div class="prod-name">Aloha Bowl Rosa</div><div class="prod-vol">450 ml</div></div>
+        <div class="product-card"><div class="prod-name">Murano Jarra Violeta</div><div class="prod-vol">2 L</div></div>
+        <div class="product-card"><div class="prod-name">Luxury Jarra</div><div class="prod-vol">2 L – Transparente / Negro</div></div>
+        <div class="product-card"><div class="prod-name">Luxury Bowl</div><div class="prod-vol">1,5 L</div></div>
+        <div class="product-card"><div class="prod-name">Bowl Cuadrado</div><div class="prod-vol">300 ml</div></div>
+        <div class="product-card"><div class="prod-name">Alegra Bowl</div><div class="prod-vol">3,5 L – Gris / Violeta</div></div>
+        <div class="product-card"><div class="prod-name">Hermético Ilúmina Flores</div><div class="prod-vol">550 ml</div></div>
+        <div class="product-card"><div class="prod-name">Bandeja Rectangular Bordó</div><div class="prod-vol">—</div></div>
+        <div class="product-card"><div class="prod-name">Ensaladera Mediterráneo</div><div class="prod-vol">—</div></div>
+        <div class="product-card"><div class="prod-name">Cubiertos Mediterráneo</div><div class="prod-vol">Cucharón y Tenedor</div></div>
+        <div class="product-card"><div class="prod-name">Cacerola con Mango Eleganza</div><div class="prod-vol">2 L</div></div>
+        <div class="product-card"><div class="prod-name">Cacerola Eleganza</div><div class="prod-vol">4,8 L</div></div>
+        <div class="product-card"><div class="prod-name">Sartén Eleganza</div><div class="prod-vol">24 cm</div></div>
+      </div>
+    </div>
+
+    <div id="panel-infantil" class="cat-panel">
+      <div class="products-grid">
+        <div class="product-card"><div class="prod-name">Practi Lunch</div><div class="prod-vol">650 ml – Fucsia / Amarillo</div></div>
+        <div class="product-card"><div class="prod-name">Poeme Cookies</div><div class="prod-vol">500 ml</div></div>
+        <div class="product-card"><div class="prod-name">Practivaso Cookies</div><div class="prod-vol">470 ml</div></div>
+        <div class="product-card"><div class="prod-name">Practivaso Sports</div><div class="prod-vol">470 ml</div></div>
+        <div class="product-card"><div class="prod-name">Mini Cuadraditos</div><div class="prod-vol">140 ml – Celeste / Rosa</div></div>
+        <div class="product-card"><div class="prod-name">Taza Unicornio</div><div class="prod-vol">280 ml</div></div>
+        <div class="product-card"><div class="prod-name">Bowl con Asa</div><div class="prod-vol">250 ml</div></div>
+        <div class="product-card"><div class="prod-name">Vaso Infantil</div><div class="prod-vol">200 ml</div></div>
+        <div class="product-card"><div class="prod-name">Botella Térmica Infantil</div><div class="prod-vol">350 ml – Jungla / Mágica</div></div>
+      </div>
+    </div>
+
+    <div id="panel-belleza" class="cat-panel">
+      <div class="products-grid">
+        <div class="product-card"><div class="prod-name">Iconic Eau de Parfum Unisex</div><div class="prod-vol">100 ml</div></div>
+        <div class="product-card"><div class="prod-name">Fleur D'Paris Eau de Parfum</div><div class="prod-vol">75 ml</div></div>
+        <div class="product-card"><div class="prod-name">Aceite Esencial Eucalipto Radiata</div><div class="prod-vol">10 ml</div></div>
+        <div class="product-card"><div class="prod-name">Aceite Esencial Lavanda Fina</div><div class="prod-vol">10 ml</div></div>
+        <div class="product-card"><div class="prod-name">Aceite Esencial Menta Piperita</div><div class="prod-vol">10 ml</div></div>
+        <div class="product-card"><div class="prod-name">Aceite Esencial Árbol de Té</div><div class="prod-vol">10 ml</div></div>
+        <div class="product-card"><div class="prod-name">Repasadores Fiori 100% Algodón</div><div class="prod-vol">—</div></div>
+        <div class="product-card"><div class="prod-name">Cajón Organizador con Mango</div><div class="prod-vol">—</div></div>
+        <div class="product-card"><div class="prod-name">Organizador Rectangular</div><div class="prod-vol">—</div></div>
+        <div class="product-card"><div class="prod-name">Multi Accesorios Organizador</div><div class="prod-vol">Grande / 200 ml</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PEDIDO FORM -->
+<section id="pedido">
+  <div class="container">
+    <div class="section-title">Hacé tu pedido</div>
+    <p class="section-sub">Completá el formulario y te contactamos para confirmar</p>
+
+    <div class="form-card">
+      <form id="orderForm">
+
+        <div class="form-row">
+          <label>Nombre completo <span class="req">*</span></label>
+          <input type="text" name="nombre" placeholder="Ej: María González" required />
+        </div>
+
+        <div class="form-row">
+          <label>Email <span class="req">*</span></label>
+          <input type="email" name="email" placeholder="tu@email.com" required />
+        </div>
+
+        <div class="form-row">
+          <label>Productos <span class="req">*</span></label>
+          <textarea name="productos" placeholder="Ej: 2x Eco Twist con Pico 500ml, 1x Termo 1.2L con vasos, 1x Mandolina Multifunción" required></textarea>
+          <p class="hint">Podés consultar el catálogo arriba. Indicá nombre, variante y cantidad de cada producto.</p>
+        </div>
+
+        <div class="form-row">
+          <label>Dirección de envío <span class="req">*</span></label>
+          <input type="text" name="direccion" placeholder="Calle, número, ciudad, provincia" required />
+        </div>
+
+        <div class="form-row">
+          <label>Indicaciones de entrega</label>
+          <input type="text" name="indicaciones" placeholder="Ej: Piso 3 dpto B, timbre Pérez, portón verde" />
+        </div>
+
+        <div class="form-row">
+          <label>Método de pago <span class="req">*</span></label>
+          <div class="pago-options">
+            <div class="pago-option">
+              <input type="radio" name="metodo_pago" id="pago-transferencia" value="Transferencia" required />
+              <label for="pago-transferencia">🏦 Transferencia</label>
+            </div>
+            <div class="pago-option">
+              <input type="radio" name="metodo_pago" id="pago-tarjeta" value="Tarjeta" />
+              <label for="pago-tarjeta">💳 Tarjeta</label>
+            </div>
+            <div class="pago-option">
+              <input type="radio" name="metodo_pago" id="pago-contraentrega" value="Contra entrega" />
+              <label for="pago-contraentrega">📦 Contra entrega</label>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">Enviar pedido</button>
+
+        <div id="form-result">
+          <div class="alert" id="result-msg"></div>
+        </div>
+      </form>
+    </div>
+
+    <div class="wa-banner">
+      <div class="wa-icon">💬</div>
+      <div class="wa-text">
+        <strong>¿Preferís por WhatsApp?</strong>
+        <p>También podés hacer tu pedido directo por WhatsApp y un asistente te guía paso a paso.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <strong>A-ware Tupperware</strong> — Distribuidora oficial<br>
+  <span style="margin-top:0.4rem;display:block;">Todos los derechos reservados &copy; 2026</span>
+</footer>
+
+<script>
+  // Catalog tabs
+  function showCat(id, btn) {
+    document.querySelectorAll('.cat-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // Form submit
+  const N8N_WEBHOOK = 'https://bonomart.app.n8n.cloud/webhook/web-pedido';
+
+  document.getElementById('orderForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    const resultDiv = document.getElementById('form-result');
+    const resultMsg = document.getElementById('result-msg');
+    const form = e.target;
+
+    // Collect data
+    const data = {
+      nombre: form.nombre.value.trim(),
+      email: form.email.value.trim(),
+      productos: form.productos.value.trim(),
+      direccion: form.direccion.value.trim(),
+      indicaciones: form.indicaciones.value.trim(),
+      metodo_pago: form.metodo_pago.value
+    };
+
+    if (!data.metodo_pago) {
+      resultDiv.style.display = 'block';
+      resultMsg.className = 'alert alert-error';
+      resultMsg.textContent = 'Por favor seleccioná un método de pago.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    resultDiv.style.display = 'none';
+
+    try {
+      const res = await fetch(N8N_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        resultDiv.style.display = 'block';
+        resultMsg.className = 'alert alert-success';
+        resultMsg.textContent = '✅ ¡Pedido recibido! Te contactamos pronto para confirmar los detalles.';
+        form.reset();
+        btn.textContent = 'Pedido enviado ✓';
+      } else {
+        throw new Error('Error del servidor');
+      }
+    } catch (err) {
+      resultDiv.style.display = 'block';
+      resultMsg.className = 'alert alert-error';
+      resultMsg.textContent = '❌ Hubo un error al enviar el pedido. Por favor intentá de nuevo o contactanos por WhatsApp.';
+      btn.disabled = false;
+      btn.textContent = 'Enviar pedido';
+    }
+  });
+</script>
+</body>
+</html>
