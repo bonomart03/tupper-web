@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Control – A-ware Tupperware</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #1a6fc4;
+      --blue-dark: #14569a;
+      --blue-light: #e8f1fb;
+      --teal: #00a99d;
+      --sidebar-w: 240px;
+      --header-h: 60px;
+      --gray: #f5f7fa;
+      --gray-border: #dde3ec;
+      --text: #1c2a3a;
+      --text-muted: #6b7a8d;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+
+      /* Status colors */
+      --s-pending:  #f39c12;
+      --s-prep:     #3498db;
+      --s-shipped:  #9b59b6;
+      --s-done:     #27ae60;
+      --s-cancelled:#e74c3c;
+    }
+
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray); color: var(--text); }
+
+    /* ── LOGIN SCREEN ── */
+    #loginScreen {
+      position: fixed; inset: 0;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--teal) 100%);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .login-logo { text-align: center; margin-bottom: 1.5rem; }
+    .login-logo h1 { font-size: 1.4rem; color: var(--blue); font-weight: 800; }
+    .login-logo p { color: var(--text-muted); font-size: 0.85rem; }
+    .login-card label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.4rem; color: var(--text); }
+    .login-card input {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+      transition: border-color 0.2s;
+    }
+    .login-card input:focus { outline: none; border-color: var(--blue); }
+    .btn-login {
+      width: 100%;
+      padding: 0.85rem;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-login:hover { background: var(--blue-dark); }
+    .login-error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; display: none; }
+
+    /* ── APP SHELL ── */
+    #app { display: none; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--text);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      z-index: 200;
+      transition: transform 0.3s;
+    }
+    .sidebar-logo {
+      padding: 1.2rem 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .sidebar-logo h2 { font-size: 1rem; font-weight: 700; color: #7fd4ff; }
+    .sidebar-logo span { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
+
+    .sidebar-nav { flex: 1; padding: 1rem 0; overflow-y: auto; }
+    .nav-section { padding: 0.5rem 1rem 0.25rem; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.35); }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 1.5rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.75);
+      border-left: 3px solid transparent;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .nav-item.active { background: rgba(26,111,196,0.25); color: #fff; border-left-color: var(--blue); }
+    .nav-icon { width: 20px; text-align: center; font-size: 1rem; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--blue);
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .sidebar-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.4);
+    }
+    .btn-logout {
+      width: 100%;
+      padding: 0.5rem;
+      background: rgba(231,76,60,0.15);
+      color: #e74c3c;
+      border: 1px solid rgba(231,76,60,0.3);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+      transition: background 0.2s;
+    }
+    .btn-logout:hover { background: rgba(231,76,60,0.25); }
+
+    /* ── MAIN ── */
+    .main { margin-left: var(--sidebar-w); display: flex; flex-direction: column; min-height: 100vh; }
+
+    .topbar {
+      height: var(--header-h);
+      background: #fff;
+      border-bottom: 1px solid var(--gray-border);
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .topbar-title { font-weight: 700; font-size: 1.05rem; flex: 1; }
+    .topbar-user { font-size: 0.82rem; color: var(--text-muted); }
+    .topbar-user span { font-weight: 600; color: var(--text); }
+
+    /* ── CONTENT AREA ── */
+    .content { padding: 1.5rem; flex: 1; }
+
+    /* ── PAGES (show/hide) ── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── STAT CARDS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow);
+      border-left: 4px solid var(--blue);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .stat-icon { font-size: 2rem; }
+    .stat-label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+
+    /* ── DATA TABLE ── */
+    .table-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .table-header {
+      display: flex;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--gray-border);
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .table-title { font-weight: 700; font-size: 1rem; flex: 1; }
+    .search-input {
+      padding: 0.5rem 0.85rem;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      width: 200px;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { outline: none; border-color: var(--blue); }
+    .filter-select {
+      padding: 0.5rem 0.75rem;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      background: #fff;
+      cursor: pointer;
+    }
+    .btn-refresh {
+      padding: 0.5rem 0.9rem;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-refresh:hover { background: var(--blue-dark); }
+    .btn-export {
+      padding: 0.5rem 0.9rem;
+      background: #fff;
+      color: var(--text);
+      border: 1.5px solid var(--gray-border);
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .btn-export:hover { border-color: var(--blue); color: var(--blue); }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    thead th {
+      background: var(--gray);
+      padding: 0.7rem 1rem;
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--gray-border); transition: background 0.15s; }
+    tbody tr:hover { background: var(--gray); }
+    tbody td { padding: 0.75rem 1rem; vertical-align: top; }
+    td.productos-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .status-pending  { background: #fef9e7; color: var(--s-pending);  border: 1px solid #f9e4a1; }
+    .status-prep     { background: #eaf4fd; color: var(--s-prep);     border: 1px solid #aed6f1; }
+    .status-shipped  { background: #f5eef8; color: var(--s-shipped);  border: 1px solid #d2b4de; }
+    .status-done     { background: #e9f7ef; color: var(--s-done);     border: 1px solid #a9dfbf; }
+    .status-cancelled{ background: #fdedec; color: var(--s-cancelled);border: 1px solid #f5b7b1; }
+
+    .status-select {
+      border: none;
+      background: transparent;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    /* ── DETAIL MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--gray-border);
+    }
+    .modal-title { font-weight: 700; flex: 1; }
+    .modal-close {
+      background: none; border: none; font-size: 1.3rem;
+      cursor: pointer; color: var(--text-muted); padding: 0 0.25rem;
+    }
+    .modal-body { padding: 1.5rem; }
+    .detail-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; }
+    .detail-label { font-weight: 600; min-width: 140px; color: var(--text-muted); }
+    .detail-value { flex: 1; }
+    .products-list { list-style: none; }
+    .products-list li { padding: 0.35rem 0; border-bottom: 1px solid var(--gray-border); font-size: 0.88rem; }
+    .products-list li:last-child { border: none; }
+
+    /* ── LOADING / EMPTY ── */
+    .table-placeholder {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+    }
+    .table-placeholder .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--gray-border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 0.75rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── CONFIG PAGE ── */
+    .config-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      max-width: 600px;
+      margin-bottom: 1rem;
+    }
+    .config-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+    .config-row { margin-bottom: 1rem; }
+    .config-row label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .config-row input {
+      width: 100%;
+      padding: 0.6rem 0.9rem;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 7px;
+      font-size: 0.88rem;
+      font-family: monospace;
+    }
+    .config-row input:focus { outline: none; border-color: var(--blue); }
+    .btn-save {
+      padding: 0.55rem 1.25rem;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.88rem;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>⚙ Panel de Control</h1>
+      <p>A-ware Tupperware — Administración</p>
+    </div>
+    <label for="loginUser">Usuario</label>
+    <input type="text" id="loginUser" placeholder="admin" autocomplete="username" />
+    <label for="loginPass">Contraseña</label>
+    <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" />
+    <button class="btn-login" onclick="doLogin()">Ingresar</button>
+    <p class="login-error" id="loginError">Usuario o contraseña incorrectos.</p>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <h2>A-ware Admin</h2>
+      <span>Panel de control</span>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section">Principal</div>
+      <div class="nav-item active" onclick="showPage('dashboard', this)">
+        <span class="nav-icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('orders', this)">
+        <span class="nav-icon">📦</span> Pedidos
+        <span class="nav-badge" id="pendingBadge">0</span>
+      </div>
+
+      <div class="nav-section">Sistema</div>
+      <div class="nav-item" onclick="showPage('config', this)">
+        <span class="nav-icon">⚙</span> Configuración
+      </div>
+      <div class="nav-item" onclick="window.open('index.html','_blank')">
+        <span class="nav-icon">🌐</span> Ver sitio web
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div>Sesión activa</div>
+      <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">Dashboard</div>
+      <div class="topbar-user">Hola, <span id="topbarUser">Admin</span></div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── PAGE: DASHBOARD ── -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div>
+              <div class="stat-label">Total pedidos</div>
+              <div class="stat-value" id="statTotal">—</div>
+            </div>
+          </div>
+          <div class="stat-card" style="border-color: var(--s-pending)">
+            <div class="stat-icon">⏳</div>
+            <div>
+              <div class="stat-label">Pendientes</div>
+              <div class="stat-value" id="statPending" style="color:var(--s-pending)">—</div>
+            </div>
+          </div>
+          <div class="stat-card" style="border-color: var(--s-shipped)">
+            <div class="stat-icon">🚚</div>
+            <div>
+              <div class="stat-label">Enviados</div>
+              <div class="stat-value" id="statShipped" style="color:var(--s-shipped)">—</div>
+            </div>
+          </div>
+          <div class="stat-card" style="border-color: var(--s-done)">
+            <div class="stat-icon">✅</div>
+            <div>
+              <div class="stat-label">Entregados</div>
+              <div class="stat-value" id="statDone" style="color:var(--s-done)">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent orders preview -->
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-title">Últimos pedidos</div>
+            <button class="btn-refresh" onclick="loadOrders()">↻ Actualizar</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Productos</th>
+                  <th>Pago</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="recentOrdersBody">
+                <tr><td colspan="5"><div class="table-placeholder"><div class="spinner"></div>Cargando pedidos…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: ORDERS ── -->
+      <div class="page" id="page-orders">
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-title">Todos los pedidos</div>
+            <input type="search" class="search-input" id="searchInput" placeholder="🔍 Buscar cliente…" oninput="filterOrders()" />
+            <select class="filter-select" id="statusFilter" onchange="filterOrders()">
+              <option value="">Todos los estados</option>
+              <option value="pending">Pendiente</option>
+              <option value="prep">Preparando</option>
+              <option value="shipped">Enviado</option>
+              <option value="done">Entregado</option>
+              <option value="cancelled">Cancelado</option>
+            </select>
+            <button class="btn-export" onclick="exportCSV()">⬇ Exportar CSV</button>
+            <button class="btn-refresh" onclick="loadOrders()">↻ Actualizar</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Email</th>
+                  <th>Dirección</th>
+                  <th>Productos</th>
+                  <th>Pago</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="allOrdersBody">
+                <tr><td colspan="9"><div class="table-placeholder"><div class="spinner"></div>Cargando pedidos…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: CONFIG ── -->
+      <div class="page" id="page-config">
+        <div class="config-card">
+          <h3>🔗 Conexión con Google Sheets</h3>
+          <div class="config-row">
+            <label>Google Sheets API Key (solo lectura)</label>
+            <input type="text" id="cfgApiKey" placeholder="AIza…" />
+          </div>
+          <div class="config-row">
+            <label>Sheet ID</label>
+            <input type="text" id="cfgSheetId" value="1CeM-OWG5HOH8QC3Hm1uFbFDXB05aY4H8YppLZgL8oOc" />
+          </div>
+          <div class="config-row">
+            <label>Nombre de la hoja</label>
+            <input type="text" id="cfgSheetName" value="Hoja 1" />
+          </div>
+          <button class="btn-save" onclick="saveConfig()">Guardar y reconectar</button>
+        </div>
+
+        <div class="config-card">
+          <h3>🔒 Cambiar contraseña del panel</h3>
+          <div class="config-row">
+            <label>Nueva contraseña</label>
+            <input type="password" id="cfgNewPass" placeholder="Mínimo 6 caracteres" />
+          </div>
+          <button class="btn-save" onclick="changePassword()">Cambiar contraseña</button>
+        </div>
+
+        <div class="config-card">
+          <h3>ℹ Instrucciones — Google Sheets API Key</h3>
+          <ol style="padding-left:1.2rem;font-size:0.85rem;line-height:1.8;color:var(--text-muted)">
+            <li>Entrá a <strong>console.cloud.google.com</strong></li>
+            <li>Creá un proyecto → Habilitá "Google Sheets API"</li>
+            <li>Credenciales → Crear credencial → Clave de API</li>
+            <li>Restringila a "Google Sheets API" (solo lectura)</li>
+            <li>Pegá la key arriba y guardá</li>
+          </ol>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ── ORDER DETAIL MODAL ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Detalle del pedido</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG & DEFAULTS ─────────────────────────────────────────────────────────
+const ADMIN_USER     = 'admin';
+const DEFAULT_PASS   = 'aware2026';   // Change via panel → Config
+const SESSION_KEY    = 'aware_admin_session';
+const STATUS_KEY     = 'aware_order_statuses';
+
+// Google Sheets API (read-only). Configure in panel → Configuración.
+let SHEETS_CONFIG = JSON.parse(localStorage.getItem('aware_sheets_cfg') || 'null') || {
+  apiKey:    '',
+  sheetId:   '1CeM-OWG5HOH8QC3Hm1uFbFDXB05aY4H8YppLZgL8oOc',
+  sheetName: 'Hoja 1'
+};
+
+// In-memory order cache
+let allOrders = [];
+
+// Status stored locally (persists across sessions)
+const statusStore = JSON.parse(localStorage.getItem(STATUS_KEY) || '{}');
+
+const STATUS_CONFIG = {
+  pending:   { label: 'Pendiente',  class: 'status-pending',   icon: '⏳' },
+  prep:      { label: 'Preparando', class: 'status-prep',      icon: '🔧' },
+  shipped:   { label: 'Enviado',    class: 'status-shipped',   icon: '🚚' },
+  done:      { label: 'Entregado',  class: 'status-done',      icon: '✅' },
+  cancelled: { label: 'Cancelado',  class: 'status-cancelled', icon: '❌' },
+};
+
+// Columns from Google Sheets (must match sheet header row):
+// fecha | nombre_cliente | email | direccion_envio | instrucciones_entrega | metodo_pago | total | productos
+const COL = { fecha:0, nombre:1, email:2, dir:3, indicaciones:4, pago:5, total:6, productos:7 };
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+function doLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const storedPass = localStorage.getItem('aware_admin_pass') || DEFAULT_PASS;
+
+  if (user === ADMIN_USER && pass === storedPass) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('topbarUser').textContent = user;
+    loadOrders();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+function changePassword() {
+  const np = document.getElementById('cfgNewPass').value;
+  if (np.length < 6) { alert('La contraseña debe tener al menos 6 caracteres.'); return; }
+  localStorage.setItem('aware_admin_pass', np);
+  alert('Contraseña actualizada. Usala la próxima vez que inicies sesión.');
+  document.getElementById('cfgNewPass').value = '';
+}
+
+// Check session on load
+window.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem(SESSION_KEY)) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadOrders();
+  }
+
+  // Load saved config
+  document.getElementById('cfgApiKey').value    = SHEETS_CONFIG.apiKey;
+  document.getElementById('cfgSheetId').value   = SHEETS_CONFIG.sheetId;
+  document.getElementById('cfgSheetName').value = SHEETS_CONFIG.sheetName;
+
+  // Enter key on login
+  document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+});
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+const pageTitles = { dashboard: 'Dashboard', orders: 'Pedidos', config: 'Configuración' };
+
+function showPage(id, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  document.getElementById('pageTitle').textContent = pageTitles[id] || id;
+}
+
+// ── GOOGLE SHEETS FETCH ───────────────────────────────────────────────────────
+async function fetchFromSheets() {
+  const { apiKey, sheetId, sheetName } = SHEETS_CONFIG;
+
+  if (!apiKey) {
+    // Return mock data when no API key is configured
+    return getMockOrders();
+  }
+
+  const range = encodeURIComponent(sheetName);
+  const url   = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+
+  const res  = await fetch(url);
+  if (!res.ok) throw new Error(`Sheets API error: ${res.status}`);
+  const json = await res.json();
+
+  // Skip header row (index 0)
+  const rows = (json.values || []).slice(1);
+  return rows.map((row, i) => ({
+    id:           i + 1,
+    fecha:        row[COL.fecha]        || '',
+    nombre:       row[COL.nombre]       || '',
+    email:        row[COL.email]        || '',
+    direccion:    row[COL.dir]          || '',
+    indicaciones: row[COL.indicaciones] || '',
+    metodo_pago:  row[COL.pago]         || '',
+    total:        row[COL.total]        || 0,
+    productos:    row[COL.productos]    || '',
+    // Status is managed locally (not stored in Sheets)
+    status:       statusStore[`row_${i+1}`] || 'pending'
+  }));
+}
+
+// ── MOCK DATA (used when no API key is configured) ────────────────────────────
+function getMockOrders() {
+  return [
+    { id:1, fecha:'2026-06-14T10:23:00Z', nombre:'María González', email:'maria@gmail.com', direccion:'Av. Corrientes 1234, CABA', indicaciones:'Piso 4 B', metodo_pago:'Transferencia', total:0, productos:'[{"nombre_articulo":"Eco Twist","variante":"500ml","cantidad":2}]', status: statusStore['row_1'] || 'pending' },
+    { id:2, fecha:'2026-06-14T11:45:00Z', nombre:'Juan Rodríguez', email:'juan@outlook.com', direccion:'San Martín 567, Rosario', indicaciones:'Casa con portón azul', metodo_pago:'Tarjeta', total:0, productos:'[{"nombre_articulo":"Termo 1.2L","variante":"con vasos","cantidad":1},{"nombre_articulo":"Bowl Creativa","variante":"Verde","cantidad":1}]', status: statusStore['row_2'] || 'prep' },
+    { id:3, fecha:'2026-06-13T09:10:00Z', nombre:'Laura Martínez', email:'laura@gmail.com', direccion:'Belgrano 890, Mendoza', indicaciones:'Timbre 2B', metodo_pago:'Contra entrega', total:0, productos:'[{"nombre_articulo":"Set Utensilios","variante":"x6","cantidad":1}]', status: statusStore['row_3'] || 'shipped' },
+    { id:4, fecha:'2026-06-12T16:30:00Z', nombre:'Carlos Pérez',  email:'carlos@yahoo.com', direccion:'Mitre 123, Córdoba', indicaciones:'', metodo_pago:'Transferencia', total:0, productos:'[{"nombre_articulo":"Mandolina Multifunción","variante":"","cantidad":1}]', status: statusStore['row_4'] || 'done' },
+  ];
+}
+
+// ── LOAD & RENDER ORDERS ──────────────────────────────────────────────────────
+async function loadOrders() {
+  setTableLoading('recentOrdersBody', 5);
+  setTableLoading('allOrdersBody', 9);
+
+  try {
+    allOrders = await fetchFromSheets();
+    renderDashboard();
+    renderAllOrders(allOrders);
+    updatePendingBadge();
+  } catch (err) {
+    console.error(err);
+    setTableError('recentOrdersBody', 5, err.message);
+    setTableError('allOrdersBody', 9, err.message);
+  }
+}
+
+function setTableLoading(tbodyId, cols) {
+  document.getElementById(tbodyId).innerHTML =
+    `<tr><td colspan="${cols}"><div class="table-placeholder"><div class="spinner"></div>Cargando pedidos…</div></td></tr>`;
+}
+function setTableError(tbodyId, cols, msg) {
+  document.getElementById(tbodyId).innerHTML =
+    `<tr><td colspan="${cols}"><div class="table-placeholder"><div class="icon">⚠️</div>${msg}<br><small>Verificá la API Key en Configuración.</small></div></td></tr>`;
+}
+
+function renderDashboard() {
+  const pending  = allOrders.filter(o => o.status === 'pending').length;
+  const shipped  = allOrders.filter(o => o.status === 'shipped').length;
+  const done     = allOrders.filter(o => o.status === 'done').length;
+
+  document.getElementById('statTotal').textContent   = allOrders.length;
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('statShipped').textContent = shipped;
+  document.getElementById('statDone').textContent    = done;
+
+  // Show last 5 orders
+  const recent = [...allOrders].reverse().slice(0, 5);
+  document.getElementById('recentOrdersBody').innerHTML = recent.length
+    ? recent.map(o => orderRowHTML(o, false)).join('')
+    : emptyRow(5);
+}
+
+function renderAllOrders(orders) {
+  document.getElementById('allOrdersBody').innerHTML = orders.length
+    ? orders.map(o => orderRowHTML(o, true)).join('')
+    : emptyRow(9);
+}
+
+function orderRowHTML(o, full) {
+  const fecha    = formatDate(o.fecha);
+  const statusCfg = STATUS_CONFIG[o.status] || STATUS_CONFIG.pending;
+  const statusBadge = `<span class="status-badge ${statusCfg.class}">${statusCfg.icon} ${statusCfg.label}</span>`;
+  const productos = parseProductos(o.productos);
+
+  if (!full) {
+    return `<tr>
+      <td>${fecha}</td>
+      <td><strong>${esc(o.nombre)}</strong></td>
+      <td class="productos-cell" title="${esc(productos)}">${esc(productos)}</td>
+      <td>${esc(o.metodo_pago)}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }
+
+  const statusSelect = `<select class="status-select" onchange="updateStatus(${o.id}, this.value)" style="color:inherit">
+    ${Object.entries(STATUS_CONFIG).map(([k,v]) =>
+      `<option value="${k}" ${o.status===k?'selected':''}>${v.icon} ${v.label}</option>`
+    ).join('')}
+  </select>`;
+
+  return `<tr>
+    <td>${o.id}</td>
+    <td style="white-space:nowrap">${fecha}</td>
+    <td><strong>${esc(o.nombre)}</strong></td>
+    <td style="font-size:0.8rem">${esc(o.email)}</td>
+    <td style="font-size:0.8rem;max-width:160px">${esc(o.direccion)}</td>
+    <td class="productos-cell" title="${esc(productos)}">${esc(productos)}</td>
+    <td>${esc(o.metodo_pago)}</td>
+    <td><span class="status-badge ${statusCfg.class}">${statusSelect}</span></td>
+    <td><button onclick="openModal(${o.id})" style="background:none;border:none;cursor:pointer;color:var(--blue);font-size:0.85rem;font-weight:600">Ver →</button></td>
+  </tr>`;
+}
+
+function emptyRow(cols) {
+  return `<tr><td colspan="${cols}"><div class="table-placeholder"><div class="icon">📭</div>No hay pedidos todavía.</div></td></tr>`;
+}
+
+// ── STATUS MANAGEMENT ─────────────────────────────────────────────────────────
+function updateStatus(orderId, newStatus) {
+  statusStore[`row_${orderId}`] = newStatus;
+  localStorage.setItem(STATUS_KEY, JSON.stringify(statusStore));
+  // Update in-memory array
+  const order = allOrders.find(o => o.id === orderId);
+  if (order) order.status = newStatus;
+  updatePendingBadge();
+  renderDashboard();
+}
+
+function updatePendingBadge() {
+  const count = allOrders.filter(o => o.status === 'pending').length;
+  document.getElementById('pendingBadge').textContent = count;
+}
+
+// ── SEARCH & FILTER ───────────────────────────────────────────────────────────
+function filterOrders() {
+  const q      = document.getElementById('searchInput').value.toLowerCase();
+  const status = document.getElementById('statusFilter').value;
+  const filtered = allOrders.filter(o => {
+    const matchQ = !q || o.nombre.toLowerCase().includes(q) || o.email.toLowerCase().includes(q);
+    const matchS = !status || o.status === status;
+    return matchQ && matchS;
+  });
+  renderAllOrders(filtered);
+}
+
+// ── ORDER DETAIL MODAL ────────────────────────────────────────────────────────
+function openModal(orderId) {
+  const o = allOrders.find(o => o.id === orderId);
+  if (!o) return;
+  const productos = parseProductosArr(o.productos);
+  const statusCfg = STATUS_CONFIG[o.status] || STATUS_CONFIG.pending;
+
+  document.getElementById('modalTitle').textContent = `Pedido #${o.id} — ${o.nombre}`;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="detail-row"><span class="detail-label">Fecha:</span><span class="detail-value">${formatDate(o.fecha)}</span></div>
+    <div class="detail-row"><span class="detail-label">Cliente:</span><span class="detail-value"><strong>${esc(o.nombre)}</strong></span></div>
+    <div class="detail-row"><span class="detail-label">Email:</span><span class="detail-value">${esc(o.email)}</span></div>
+    <div class="detail-row"><span class="detail-label">Dirección:</span><span class="detail-value">${esc(o.direccion)}</span></div>
+    <div class="detail-row"><span class="detail-label">Indicaciones:</span><span class="detail-value">${esc(o.indicaciones) || '—'}</span></div>
+    <div class="detail-row"><span class="detail-label">Método de pago:</span><span class="detail-value">${esc(o.metodo_pago)}</span></div>
+    <div class="detail-row"><span class="detail-label">Estado:</span><span class="detail-value"><span class="status-badge ${statusCfg.class}">${statusCfg.icon} ${statusCfg.label}</span></span></div>
+    <div style="margin-top:1rem">
+      <strong style="font-size:0.85rem">Productos:</strong>
+      <ul class="products-list" style="margin-top:0.5rem">
+        ${productos.map(p => `<li><strong>${p.cantidad}x</strong> ${esc(p.nombre_articulo)}${p.variante ? ' <span style="color:var(--text-muted)">(' + esc(p.variante) + ')</span>' : ''}</li>`).join('')}
+      </ul>
+    </div>`;
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+}
+
+// ── CSV EXPORT ────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const headers = ['#','Fecha','Cliente','Email','Dirección','Indicaciones','Método Pago','Productos','Estado'];
+  const rows = allOrders.map(o => [
+    o.id,
+    o.fecha,
+    o.nombre,
+    o.email,
+    o.direccion,
+    o.indicaciones,
+    o.metodo_pago,
+    parseProductos(o.productos),
+    STATUS_CONFIG[o.status]?.label || o.status
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`));
+
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `pedidos-aware-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+function saveConfig() {
+  SHEETS_CONFIG = {
+    apiKey:    document.getElementById('cfgApiKey').value.trim(),
+    sheetId:   document.getElementById('cfgSheetId').value.trim(),
+    sheetName: document.getElementById('cfgSheetName').value.trim(),
+  };
+  localStorage.setItem('aware_sheets_cfg', JSON.stringify(SHEETS_CONFIG));
+  alert('Configuración guardada. Actualizando datos…');
+  loadOrders();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function formatDate(str) {
+  if (!str) return '—';
+  const d = new Date(str);
+  return isNaN(d) ? str : d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function parseProductos(raw) {
+  try {
+    const arr = JSON.parse(raw);
+    return arr.map(p => `${p.cantidad}x ${p.nombre_articulo}`).join(', ');
+  } catch { return raw || '—'; }
+}
+
+function parseProductosArr(raw) {
+  try { return JSON.parse(raw); }
+  catch { return [{ cantidad:1, nombre_articulo: raw, variante:'' }]; }
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
