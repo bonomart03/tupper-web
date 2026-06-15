@@ -608,14 +608,24 @@ function renderCatalog() {
       const src = p.imageUrl || generatePlaceholder(p.name, cat.color);
       const card = document.createElement('div');
       card.className = 'product-card animate';
-      card.innerHTML = `
-        <div class="product-img-wrap">
-          <img src="${src}" alt="${p.name} ${p.variant} – Tupperware A-ware" loading="lazy" width="300" height="300" />
-        </div>
-        <div class="product-info">
-          <div class="prod-name">${p.name}</div>
-          <div class="prod-vol">${p.variant}</div>
-        </div>`;
+
+      // Use data-src for manual lazy-load so hidden tabs load correctly on reveal
+      const img = document.createElement('img');
+      img.dataset.src = src;
+      img.alt = `${p.name} ${p.variant} – Tupperware A-ware`;
+      img.width = 300;
+      img.height = 300;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'product-img-wrap';
+      wrap.appendChild(img);
+
+      const info = document.createElement('div');
+      info.className = 'product-info';
+      info.innerHTML = `<div class="prod-name">${p.name}</div><div class="prod-vol">${p.variant}</div>`;
+
+      card.appendChild(wrap);
+      card.appendChild(info);
       grid.appendChild(card);
     });
 
@@ -630,8 +640,17 @@ function showCat(id, btn) {
   const panel = document.getElementById('panel-' + id);
   panel.classList.add('active');
   btn.classList.add('active');
-  // Re-trigger observer for newly visible cards
+  // Load images that were hidden (data-src → src)
+  loadPanelImages(panel);
+  // Re-trigger animation observer for cards in this panel
   panel.querySelectorAll('.animate:not(.visible)').forEach(el => observer.observe(el));
+}
+
+function loadPanelImages(panel) {
+  panel.querySelectorAll('img[data-src]').forEach(img => {
+    img.src = img.dataset.src;
+    img.removeAttribute('data-src');
+  });
 }
 
 // ── INTERSECTION OBSERVER (scroll animations) ─────────────────────────────────
@@ -705,6 +724,8 @@ document.getElementById('orderForm').addEventListener('submit', async function(e
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 renderCatalog();
+// Load images of the first (visible) tab immediately
+loadPanelImages(document.getElementById('panel-' + CATALOG[0].id));
 initAnimations();
 </script>
 </body>
