@@ -448,7 +448,7 @@ const CATALOG = [
       { name: 'Eco Twist Frutos del Bosque', variant: '500 ml', imageUrl: null },
       { name: 'Eco Twist Clásica', variant: '500 ml', imageUrl: null },
       { name: 'Aquananda Botella', variant: '550 ml', imageUrl: null },
-      { name: 'Botella Térmica A-ware', variant: '880 ml', imageUrl: null },
+      { name: 'Botella Térmica A-ware', variant: '880 ml', imageUrl: 'https://pub-317468b635504dfc8f81c86938de8865.r2.dev/botella%20termica%20750%20x%201100.png' },
       { name: 'Termo con 2 vasos', variant: '1,2 L', imageUrl: null },
       { name: 'Termo para Alimentos', variant: '250 ml', imageUrl: null },
       { name: 'Termo Alimentos Bordó', variant: '500 ml', imageUrl: null },
@@ -503,7 +503,7 @@ const CATALOG = [
       { name: 'Bowl Creativa', variant: '10 L – Verde / Blanco', imageUrl: null },
       { name: 'Batidor Ideal', variant: '3,2 L – Transp / Violeta', imageUrl: null },
       { name: 'Set Utensilios Acero/Silicona', variant: 'x6', imageUrl: null },
-      { name: 'Mandolina Multifunción', variant: '—', imageUrl: null },
+      { name: 'Mandolina Multifunción', variant: '—', imageUrl: 'https://pub-317468b635504dfc8f81c86938de8865.r2.dev/HOGAR%20MANDOLINA.png' },
       { name: 'Ralladores Celeste', variant: 'Set x3', imageUrl: null },
       { name: 'Centriescurridor de Verduras', variant: '6 L', imageUrl: null },
       { name: 'Molinillo Compacto Cerámica', variant: '170 ml', imageUrl: null },
@@ -556,10 +556,10 @@ const CATALOG = [
     products: [
       { name: 'Iconic Eau de Parfum Unisex', variant: '100 ml', imageUrl: null },
       { name: 'Fleur D\'Paris Eau de Parfum', variant: '75 ml', imageUrl: null },
-      { name: 'Aceite Esencial Eucalipto Radiata', variant: '10 ml', imageUrl: null },
-      { name: 'Aceite Esencial Lavanda Fina', variant: '10 ml', imageUrl: null },
-      { name: 'Aceite Esencial Menta Piperita', variant: '10 ml', imageUrl: null },
-      { name: 'Aceite Esencial Árbol de Té', variant: '10 ml', imageUrl: null },
+      { name: 'Aceite Esencial Eucalipto Radiata', variant: '10 ml', imageUrl: 'https://pub-317468b635504dfc8f81c86938de8865.r2.dev/novedades%20bienestar.png' },
+      { name: 'Aceite Esencial Lavanda Fina', variant: '10 ml', imageUrl: 'https://pub-317468b635504dfc8f81c86938de8865.r2.dev/novedades%20bienestar.png' },
+      { name: 'Aceite Esencial Menta Piperita', variant: '10 ml', imageUrl: 'https://pub-317468b635504dfc8f81c86938de8865.r2.dev/novedades%20bienestar.png' },
+      { name: 'Aceite Esencial Árbol de Té', variant: '10 ml', imageUrl: 'https://pub-317468b635504dfc8f81c86938de8865.r2.dev/novedades%20bienestar.png' },
       { name: 'Repasadores Fiori 100% Algodón', variant: '—', imageUrl: null },
       { name: 'Cajón Organizador con Mango', variant: '—', imageUrl: null },
       { name: 'Organizador Rectangular', variant: '—', imageUrl: null },
@@ -569,30 +569,17 @@ const CATALOG = [
 ];
 
 // ── IMAGE PLACEHOLDER GENERATOR ───────────────────────────────────────────────
-// Generates a branded SVG as a data URI when no real image URL is provided.
-function generatePlaceholderSVG(name, color) {
+// Uses placehold.co (reliable external service) when no real imageUrl is set.
+// Replace imageUrl: null with a real URL in the CATALOG array to show real photos.
+function generatePlaceholder(name, color) {
+  const hex = color.replace('#', '');
   const initials = name
     .split(' ')
     .filter(w => w.length > 2)
     .slice(0, 2)
     .map(w => w[0].toUpperCase())
     .join('') || name.substring(0, 2).toUpperCase();
-
-  const bg   = color + '18'; // 10% opacity background
-  const ring = color + '40'; // 25% opacity ring
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
-    <rect width="300" height="300" fill="${bg}"/>
-    <circle cx="150" cy="150" r="120" fill="none" stroke="${ring}" stroke-width="1"/>
-    <circle cx="150" cy="150" r="80" fill="${color}22"/>
-    <text x="150" y="165" text-anchor="middle" dominant-baseline="middle"
-      font-size="64" font-weight="700" font-family="Segoe UI,system-ui,sans-serif"
-      fill="${color}">${initials}</text>
-    <rect x="0" y="0" width="300" height="5" fill="${color}" rx="0"/>
-    <rect x="0" y="295" width="300" height="5" fill="${color}" rx="0"/>
-  </svg>`;
-
-  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+  return `https://placehold.co/300x300/${hex}/ffffff?text=${encodeURIComponent(initials)}`;
 }
 
 // ── CATALOG RENDERER ──────────────────────────────────────────────────────────
@@ -618,7 +605,7 @@ function renderCatalog() {
     grid.setAttribute('data-stagger', '');
 
     cat.products.forEach(p => {
-      const src = p.imageUrl || generatePlaceholderSVG(p.name, cat.color);
+      const src = p.imageUrl || generatePlaceholder(p.name, cat.color);
       const card = document.createElement('div');
       card.className = 'product-card animate';
       card.innerHTML = `
