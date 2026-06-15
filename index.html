@@ -182,6 +182,29 @@
       transition: transform 0.3s ease;
     }
     .product-card:hover .product-img-wrap img { transform: scale(1.05); }
+
+    /* CSS-only placeholder when no real photo is available */
+    .product-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: transform 0.3s ease;
+    }
+    .product-card:hover .product-placeholder { transform: scale(1.04); }
+    .placeholder-initials {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+      opacity: 0.85;
+    }
+    .placeholder-icon {
+      font-size: 1.6rem;
+      opacity: 0.6;
+    }
     .product-info { padding: 0.75rem; }
     .prod-name { font-weight: 600; color: var(--text); font-size: 0.85rem; line-height: 1.3; }
     .prod-vol { color: var(--text-muted); font-size: 0.78rem; margin-top: 3px; }
@@ -568,18 +591,18 @@ const CATALOG = [
   }
 ];
 
-// ── IMAGE PLACEHOLDER GENERATOR ───────────────────────────────────────────────
-// Uses placehold.co (reliable external service) when no real imageUrl is set.
-// Replace imageUrl: null with a real URL in the CATALOG array to show real photos.
-function generatePlaceholder(name, color) {
-  const hex = color.replace('#', '');
-  const initials = name
-    .split(' ')
-    .filter(w => w.length > 2)
-    .slice(0, 2)
-    .map(w => w[0].toUpperCase())
-    .join('') || name.substring(0, 2).toUpperCase();
-  return `https://placehold.co/300x300/${hex}/ffffff?text=${encodeURIComponent(initials)}`;
+// ── CSS PLACEHOLDER BUILDER ────────────────────────────────────────────────────
+// Returns a div element styled with the category color — zero external deps.
+const CAT_ICONS = { botellas:'💧', conservacion:'❄️', alacena:'🥫', cocina:'🍳', servir:'🥘', infantil:'🎒', belleza:'✨' };
+
+function buildPlaceholder(name, color, catId) {
+  const initials = name.split(' ').filter(w => w.length > 2).slice(0, 2).map(w => w[0].toUpperCase()).join('') || name.substring(0, 2).toUpperCase();
+  const div = document.createElement('div');
+  div.className = 'product-placeholder';
+  div.style.background = `linear-gradient(135deg, ${color}22 0%, ${color}44 100%)`;
+  div.style.color = color;
+  div.innerHTML = `<div class="placeholder-icon">${CAT_ICONS[catId] || '📦'}</div><div class="placeholder-initials">${initials}</div>`;
+  return div;
 }
 
 // ── CATALOG RENDERER ──────────────────────────────────────────────────────────
@@ -605,20 +628,25 @@ function renderCatalog() {
     grid.setAttribute('data-stagger', '');
 
     cat.products.forEach(p => {
-      const src = p.imageUrl || generatePlaceholder(p.name, cat.color);
       const card = document.createElement('div');
       card.className = 'product-card animate';
 
-      // Use data-src for manual lazy-load so hidden tabs load correctly on reveal
-      const img = document.createElement('img');
-      img.dataset.src = src;
-      img.alt = `${p.name} ${p.variant} – Tupperware A-ware`;
-      img.width = 300;
-      img.height = 300;
-
       const wrap = document.createElement('div');
       wrap.className = 'product-img-wrap';
-      wrap.appendChild(img);
+
+      if (p.imageUrl) {
+        // Real photo: standard img tag
+        const img = document.createElement('img');
+        img.src = p.imageUrl;
+        img.alt = `${p.name} ${p.variant} – Tupperware A-ware`;
+        img.width = 300;
+        img.height = 300;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+        wrap.appendChild(img);
+      } else {
+        // No photo: CSS placeholder (no external service, always works)
+        wrap.appendChild(buildPlaceholder(p.name, cat.color, cat.id));
+      }
 
       const info = document.createElement('div');
       info.className = 'product-info';
@@ -646,12 +674,7 @@ function showCat(id, btn) {
   panel.querySelectorAll('.animate:not(.visible)').forEach(el => observer.observe(el));
 }
 
-function loadPanelImages(panel) {
-  panel.querySelectorAll('img[data-src]').forEach(img => {
-    img.src = img.dataset.src;
-    img.removeAttribute('data-src');
-  });
-}
+function loadPanelImages(panel) { /* no-op: CSS placeholders render instantly */ }
 
 // ── INTERSECTION OBSERVER (scroll animations) ─────────────────────────────────
 const observer = new IntersectionObserver((entries) => {
