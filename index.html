@@ -745,11 +745,60 @@ document.getElementById('orderForm').addEventListener('submit', async function(e
   }
 });
 
+// ── GOOGLE SHEETS IMAGE LOADER ────────────────────────────────────────────────
+function normalizeKey(s) {
+  return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
+}
+
+function parseCSVLine(line) {
+  var result = [], current = '', inQ = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { result.push(current.trim()); current = ''; }
+    else { current += ch; }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+async function loadImagesFromSheet() {
+  try {
+    var res = await fetch('https://docs.google.com/spreadsheets/d/1CeM-OWG5HOH8QC3Hm1uFbFDXB05aY4H8YppLZgL8oOc/export?format=csv&sheet=Catalogo');
+    if (!res.ok) return;
+    var csv = await res.text();
+    var lines = csv.trim().split(/\r?\n/);
+    var imageMap = {};
+    for (var i = 1; i < lines.length; i++) {
+      var cols = parseCSVLine(lines[i]);
+      var nombre = cols[0] || '';
+      var variante = cols[1] || '';
+      var url_imagen = cols[3] || '';
+      if (nombre && url_imagen) {
+        imageMap[normalizeKey(nombre) + '|' + normalizeKey(variante)] = url_imagen;
+      }
+    }
+    CATALOG.forEach(function(cat) {
+      cat.products.forEach(function(p) {
+        if (!p.imageUrl) {
+          var key = normalizeKey(p.name) + '|' + normalizeKey(p.variant);
+          var url = imageMap[key];
+          if (url) p.imageUrl = url;
+        }
+      });
+    });
+  } catch(e) {
+    console.warn('Sheets no disponible, usando placeholders');
+  }
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
-renderCatalog();
-// Load images of the first (visible) tab immediately
-loadPanelImages(document.getElementById('panel-' + CATALOG[0].id));
-initAnimations();
+(async function init() {
+  await loadImagesFromSheet();
+  renderCatalog();
+  loadPanelImages(document.getElementById('panel-' + CATALOG[0].id));
+  initAnimations();
+})();
 </script>
 </body>
 </html>
