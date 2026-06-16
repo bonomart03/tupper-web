@@ -764,7 +764,7 @@ function parseCSVLine(line) {
 
 async function loadImagesFromSheet() {
   try {
-    var res = await fetch('https://docs.google.com/spreadsheets/d/1CeM-OWG5HOH8QC3Hm1uFbFDXB05aY4H8YppLZgL8oOc/export?format=csv&sheet=Catalogo');
+    var res = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSGu2YmAxT9JcMPY3JfeAdwt2HyPAojJTsO6JvaRxiQaA8yij9IRs5Bz_FJmIIqD2Cdm0NRekQQ7hqc/pub?gid=1087013342&single=true&output=csv');
     if (!res.ok) return;
     var csv = await res.text();
     var lines = csv.trim().split(/\r?\n/);
